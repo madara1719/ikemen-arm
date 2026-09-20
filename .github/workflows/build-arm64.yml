@@ -36,18 +36,28 @@ jobs:
       - name: Compilar (esto incluye compilar FFmpeg)
         run: ./build/build.sh LinuxARM
 
-      - name: Ver qué se generó
+      - name: Localizar el binario y preparar el paquete
         run: |
-          ls -lh bin/
-          file bin/Ikemen_GO_* || true
+          echo "== Ejecutables ELF grandes generados =="
+          find . -type f -size +5M -not -path './.git/*' -exec file {} + | grep -i 'ELF' || true
+
+          BIN=$(find . -type f -name 'Ikemen_GO_LinuxARM*' -not -path './.git/*' | head -n1)
+          if [ -z "$BIN" ]; then
+            echo "No encontré Ikemen_GO_LinuxARM; mira la lista de arriba"
+            exit 1
+          fi
+          echo "Binario: $BIN"
+
+          mkdir -p dist
+          cp "$BIN" dist/Ikemen_GO_LinuxARM
+          for d in data external font; do
+            [ -d "$d" ] && cp -r "$d" dist/ || true
+          done
+          ls -lh dist/
 
       - name: Subir resultado
         uses: actions/upload-artifact@v4
         with:
           name: Ikemen_GO_LinuxARM
-          path: |
-            bin/Ikemen_GO_*
-            data
-            external
-            font
-          if-no-files-found: warn
+          path: dist
+          if-no-files-found: error
