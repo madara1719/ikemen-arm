@@ -1,44 +1,47 @@
 name: Build Ikemen GO (Linux ARM64)
 
+# Se lanza a mano desde la pestaña Actions. No hace falta hacer fork:
+# este workflow clona directamente el repo oficial de Ikemen GO.
 on:
   workflow_dispatch:
     inputs:
       ref:
-        description: "ikemen tree to compile"
+        description: "Rama o tag de Ikemen-GO a compilar (develop, v1.0.0, ...)"
         default: develop
 
 jobs:
   build:
+    # Runner ARM64 nativo (gratis en repos públicos), sin cross-compilar
     runs-on: ubuntu-24.04-arm
     steps:
-      - name: clone ikemen
+      - name: Clonar Ikemen GO
         uses: actions/checkout@v4
         with:
           repository: ikemen-engine/Ikemen-GO
           ref: ${{ inputs.ref }}
 
-      - name: install go
+      - name: Instalar Go (la versión que pida el proyecto)
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
 
-      - name: install dependencies
+      - name: Instalar dependencias
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             pkg-config make nasm yasm build-essential \
             libxmp-dev libsdl2-dev \
-            libgl1-mesa-dev libasound2-dev
+            libgtk-3-dev libgl1-mesa-dev libasound2-dev libopenal-dev
 
-      - name: compile 
+      - name: Compilar (esto incluye compilar FFmpeg)
         run: ./build/build.sh LinuxARM
 
-      - name: see binaries
+      - name: Ver qué se generó
         run: |
           ls -lh bin/
           file bin/Ikemen_GO_* || true
 
-      - name: upload
+      - name: Subir resultado
         uses: actions/upload-artifact@v4
         with:
           name: Ikemen_GO_LinuxARM
